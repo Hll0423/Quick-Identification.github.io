@@ -1,0 +1,713 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧公寓快速识人数据大屏</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.2/dist/echarts.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0A1A2F;
+            --bg-secondary: #16253D;
+            --accent-blue: #00A3FF;
+            --accent-green: #00E5A0;
+            --text-primary: rgba(255,255,255,0.9);
+            --text-secondary: rgba(255,255,255,0.6);
+            --chart-grid: rgba(255,255,255,0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .ranking-panel {
+            position: relative;
+            padding-bottom: 100px;
+            height: calc(100% - 20px);
+        }
+        
+        /* 新增模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+        }
+
+        .modal-content {
+            background-color: var(--bg-secondary);
+            margin: 15% auto;
+            padding: 25px;
+            border-radius: 12px;
+            width: 400px;
+            position: relative;
+        }
+
+        .close {
+            color: rgba(255,255,255,0.6);
+            position: absolute;
+            right: 20px;
+            top: 10px;
+            font-size: 28px;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: var(--text-primary);
+        }
+
+        #detailContent {
+            display: grid;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+        }
+
+        .detail-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .detail-value {
+            color: var(--accent-green);
+            font-weight: 500;
+        }
+        /* 原有其他样式保持不变 */
+        .copyright-footer {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 16px;
+            color: rgba(255,255,255,0.4);
+            line-height: 1.6;
+            padding: 0 25px;
+        }
+
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: 80px 1fr 1fr;
+            gap: 20px;
+            padding: 30px;
+            height: 100vh;
+        }
+
+        .dashboard-header {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .dashboard-title {
+            font-size: 28px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            position: relative;
+            padding-left: 25px;
+        }
+
+        .dashboard-title::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 24px;
+            background: var(--accent-green);
+            border-radius: 3px;
+        }
+
+        .timestamp {
+            font-size: 16px;
+            color: var(--accent-green);
+            font-family: monospace;
+        }
+
+        .ranking-panel {
+            grid-column: 1 / 4;
+            grid-row: 2 / 4;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 25px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ranking-panel::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, 
+                var(--accent-green) 0%, 
+                var(--accent-blue) 100%);
+        }
+
+        .ranking-header {
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-title {
+            font-size: 20px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .panel-title::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+
+        .ranking-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .ranking-item {
+        display: grid;
+        grid-template-columns: 40px 1fr auto;
+        align-items: center;
+        padding: 18px;
+        background: rgba(255,255,255,0.03);
+        border-radius: 8px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        position: relative; /* 新增定位 */
+    }
+
+
+/* 添加自定义提示框样式 */
+    .ranking-item:hover::after {
+        content: "点击可查看详情";
+        position: absolute;
+        bottom: calc(100% + 10px);
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        white-space: nowrap;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        border: 1px solid rgba(255,255,255,0.1);
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        z-index: 1000;
+    }
+    .ranking-item:hover::after {
+        opacity: 1;
+    }
+
+        .ranking-item:hover {
+            transform: translateX(8px);
+            background: rgba(0,229,160,0.05);
+            box-shadow: 4px 0 12px rgba(0,229,160,0.1);
+        }
+
+        .rank-badge {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            background: rgba(255,255,255,0.1);
+            color: var(--accent-green);
+        }
+
+        .rank-1 .rank-badge { background: linear-gradient(135deg, #00E5A0 0%, #00A3FF 100%); color: white }
+        .rank-2 .rank-badge { background: rgba(0,229,160,0.2) }
+        .rank-3 .rank-badge { background: rgba(0,163,255,0.2) }
+
+        .user-info {
+            display: grid;
+            gap: 4px;
+        }
+
+        .user-name {
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .user-id {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .user-score {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--accent-green);
+            position: relative;
+            padding-right: 24px;
+        }
+
+        .user-score::after {
+            content: "分";
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+            color: var(--text-secondary);
+        }
+
+        .chart-panel {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 25px;
+            position: relative;
+        }
+
+        .chart-panel::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, 
+                var(--accent-blue) 0%, 
+                var(--accent-green) 100%);
+        }
+
+        #scoreDistributionChart { 
+            grid-column:4/9; 
+            grid-row:2/3; 
+            height: calc(100% - 20px);
+        }
+
+        #totalScoreChart { 
+            grid-column:4/9; 
+            grid-row:3/4; 
+            height: calc(100% - 20px);
+        }
+
+        .chart-container {
+            height: calc(100% - 40px);
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <h1 class="dashboard-title">智慧公寓快速识人数据大屏</h1>
+            <div class="timestamp" id="timestamp"></div>
+        </header>
+
+        <!-- TOP5 排名模块 -->
+        <section class="ranking-panel">
+            <div class="ranking-header">
+                <h2 class="panel-title">实时考核 TOP5</h2>
+                <div class="update-status">每5秒自动更新</div>
+            </div>
+            <div class="ranking-list" id="rankingList"></div>
+
+            <div class="copyright-footer">
+                © 南京航空航天大学后勤保障部公寓服务中心 版权所有<br>
+                © 2025 [黄兰兰]
+            </div>
+        </section>
+
+        <!-- 图表模块 -->
+        <div class="chart-panel" id="scoreDistributionChart">
+            <h3 class="panel-title">分数分布</h3>
+            <div class="chart-container"></div>
+        </div>
+        <div class="chart-panel" id="totalScoreChart">
+            <h3 class="panel-title">分数段占比</h3>
+            <div class="chart-container"></div>
+        </div>
+    </div>
+
+    <!-- 新增模态框 -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3 class="panel-title" style="margin-bottom:15px">管理员详细信息</h3>
+            <div id="detailContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // 图表实例
+        let scoreChart, categoryPieChart;
+        
+        // 楼栋数据
+        const buildingData = [
+            {name:'王群', building:'B10', students:348},
+            {name:'丁丽芳', building:'B10', students:348},
+            {name:'刘新梅', building:'B10', students:348},
+            {name:'卢丽玲', building:'B11', students:399},
+            {name:'张峰', building:'B12', students:122},
+            {name:'芮蓉', building:'B13', students:374},
+            {name:'傅红粉', building:'B14', students:274},
+            {name:'王玲', building:'B15', students:299},
+            {name:'肖慧', building:'B17', students:743}
+        ];
+
+        // 获取排名数据
+        const getRankingData = () => {
+            const data = JSON.parse(localStorage.getItem('allTestResults')) || [];
+            return data.sort((a, b) => b.score - a.score).slice(0, 5);
+        }
+
+        // 渲染排名列表
+        const renderRanking = () => {
+            const container = document.getElementById('rankingList');
+            const data = getRankingData();
+            
+            while(data.length < 5) data.push({ placeholder: true });
+            container.innerHTML = data.map((item, index) => `
+                <div class="ranking-item rank-${index+1}">
+                    <div class="rank-badge">${index + 1}</div>
+                    <div class="user-info">
+                        <div class="user-name">${item.name || '--'}</div>
+                        <div class="user-id">工号：${item.id || '0000'}</div>
+                    </div>
+                    <div class="user-score">${item.score || 0}</div>
+                </div>
+            `).join('');
+        }
+
+        // 点击事件处理
+        document.getElementById('rankingList').addEventListener('click', function(e) {
+            const item = e.target.closest('.ranking-item');
+            if (!item) return;
+            
+            const nameElement = item.querySelector('.user-name');
+            if (!nameElement || nameElement.textContent === '--') return;
+            
+            showAdminDetails(nameElement.textContent);
+        });
+
+        // 显示详细信息
+        function showAdminDetails(name) {
+    const results = JSON.parse(localStorage.getItem('allTestResults')) || [];
+    const admin = results.find(r => r.name === name);
+    const building = buildingData.find(b => b.name === name);
+    // 处理得分为0的显示逻辑
+    const formatScore = (value) => {
+        return typeof value === 'number' ? value : '--';
+    };
+    const content = `
+        <div class="detail-item">
+            <span class="detail-label">管理员姓名</span>
+            <span class="detail-value">${name || '--'}</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">姓名:</span>
+            <span class="detail-value">${formatScore(admin?.nameScore)}</span>
+            <span class="detail-label">学院:</span>
+            <span class="detail-value">${formatScore(admin?.collegeScore)}</span>
+            <span class="detail-label">类别:</span>
+            <span class="detail-value">${formatScore(admin?.categoryScore)}</span>
+            <span class="detail-label">楼层:</span>
+            <span class="detail-value">${formatScore(admin?.floorScore)}</span>
+            <span class="detail-label">房间号:</span>
+            <span class="detail-value">${formatScore(admin?.roomScore)}</span>
+        </div>
+        
+        <div class="detail-item">
+            <span class="detail-label">负责楼栋</span>
+            <span class="detail-value">${building?.building || '--'}</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">在住人数</span>
+            <span class="detail-value">${building?.students ?? '--'}</span>
+        </div>
+    `;
+    document.getElementById('detailContent').innerHTML = content;
+    document.getElementById('detailModal').style.display = 'block';
+}
+
+        // 关闭模态框
+        document.querySelector('.close').addEventListener('click', () => {
+            document.getElementById('detailModal').style.display = 'none';
+        });
+
+        window.onclick = function(event) {
+            if (event.target === document.getElementById('detailModal')) {
+                document.getElementById('detailModal').style.display = 'none';
+            }
+        };
+
+        // 以下原有功能保持不变
+        // 更新时间戳
+        const updateTimestamp = () => {
+            document.getElementById('timestamp').textContent = new Date().toLocaleString('zh-CN', { 
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        // 处理图表数据
+        const processChartData = () => {
+            const data = JSON.parse(localStorage.getItem('allTestResults')) || [];
+            
+            const scoreRanges = [
+                { label: '0-59', min: 0, max: 59 },
+                { label: '60-69', min: 60, max: 69 },
+                { label: '70-79', min: 70, max: 79 },
+                { label: '80-89', min: 80, max: 89 },
+                { label: '90-100', min: 90, max: 100 }
+            ];
+            
+            const scoreDistribution = scoreRanges.map(({ label, min, max }) => ({
+                name: label,
+                value: data.filter(d => d.score >= min && d.score <= max).length
+            })).filter(item => item.value > 0);
+
+            return { scoreDistribution };
+        }
+
+        // 初始化图表
+        const initCharts = () => {
+            scoreChart = echarts.init(document.querySelector('#scoreDistributionChart .chart-container'));
+            categoryPieChart = echarts.init(document.querySelector('#totalScoreChart .chart-container'));
+            updateCharts();
+        };
+
+        // 更新图表
+        const updateCharts = () => {
+            const { scoreDistribution } = processChartData();
+
+            // 分数分布柱状图
+            scoreChart.setOption({
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: '{b}分：{c}人'
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '10%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: scoreDistribution.map(d => d.name),
+                    axisLabel: {
+                        color: 'rgba(255,255,255,0.6)',
+                        rotate: 45
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: 'rgba(255,255,255,0.2)'
+                        }
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    axisLabel: {
+                        color: 'rgba(255,255,255,0.6)'
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            color: 'rgba(255,255,255,0.1)'
+                        }
+                    }
+                },
+                series: [{
+                    name: '人数',
+                    type: 'bar',
+                    data: scoreDistribution.map(d => d.value),
+                    itemStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: '#00E5A0' },
+                            { offset: 1, color: '#00A3FF' }
+                        ]),
+                        borderRadius: [4, 4, 0, 0]
+                    },
+                    label: {
+                        show: true,
+                        position: 'top',
+                        color: '#fff',
+                        fontSize: 14,
+                        fontWeight: 'bold',
+                        formatter: '{c}'
+                    }
+                }]
+            });
+
+            // 分类占比饼图
+            categoryPieChart.setOption({
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{a}<br/>{b}: {c}人 ({d}%)'
+                },
+                legend: {
+                    orient: 'vertical',
+                    left: 'left',
+                    textStyle: {
+                        color: 'rgba(255,255,255,0.8)'
+                    }
+                },
+                series: [{
+                    name: '分数段占比',
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    avoidLabelOverlap: false,
+                    itemStyle: {
+                        borderRadius: 8,
+                        borderColor: '#16253D',
+                        borderWidth: 4
+                    },
+                    label: {
+                        show: true,
+                        formatter: '{b|{b}}\n{per|{d}%}',
+                        rich: {
+                            b: {
+                                color: '#fff',
+                                fontSize: 14,
+                                lineHeight: 26
+                            },
+                            per: {
+                                color: 'rgba(255,255,255,0.6)',
+                                fontSize: 12
+                            }
+                        }
+                    },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: 20
+                        }
+                    },
+                    data: scoreDistribution,
+                    color: [
+                        new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: '#FF6B6B' },
+                            { offset: 1, color: '#FF8E53' }
+                        ]),
+                        new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: '#4ECDC4' },
+                            { offset: 1, color: '#45B7AF' }
+                        ]),
+                        new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: '#96F2D7' },
+                            { offset: 1, color: '#50CB93' }
+                        ]),
+                        new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: '#6A89CC' },
+                            { offset: 1, color: '#4A69BD' }
+                        ]),
+                        new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: '#C44569' },
+                            { offset: 1, color: '#E55050' }
+                        ])
+                    ]
+                }]
+            });
+        };
+        // 窗口resize处理
+        const handleResize = () => {
+            scoreChart.resize();
+            categoryPieChart.resize();
+        }
+        // 初始化
+        window.addEventListener('load', () => {
+            renderRanking();
+            updateTimestamp();
+            initCharts();
+            window.addEventListener('resize', handleResize);
+        });
+        // 定时更新
+        setInterval(() => {
+            // 显示加载状态
+            showUpdateIndicator();
+            
+            // 延迟执行确保动画可见
+            setTimeout(() => {
+                renderRanking();
+                updateTimestamp();
+                updateCharts();
+            }, 500);
+        }, 5000);
+        // 新增更新提示动画
+        const showUpdateIndicator = () => {
+            // 时间戳闪烁效果
+            const timestamp = document.getElementById('timestamp');
+            timestamp.style.transition = 'none';
+            timestamp.style.color = 'var(--accent-green)';
+            setTimeout(() => {
+                timestamp.style.transition = 'color 0.5s ease';
+                timestamp.style.color = 'var(--accent-green)';
+            }, 300);
+            // 排名项波动动画
+            document.querySelectorAll('.ranking-item').forEach((item, index) => {
+                setTimeout(() => {
+                    item.style.transform = `translateX(${index % 2 ? '-' : ''}8px)`;
+                    setTimeout(() => item.style.transform = '', 300);
+                }, index * 100);
+            });
+            // 图表呼吸效果
+            [scoreChart, categoryPieChart].forEach(chart => {
+                chart.getDom().style.transform = 'scale(1.02)';
+                setTimeout(() => chart.getDom().style.transform = '', 500);
+            });
+        }
+        // 添加CSS过渡效果
+        const style = document.createElement('style');
+        style.textContent = `
+            .ranking-item {
+                transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
+            #timestamp {
+                transition: color 0.5s ease;
+            }
+            .echarts {
+                transition: transform 0.5s ease;
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

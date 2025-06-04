@@ -1,0 +1,1704 @@
+﻿
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>楼栋安全人脸抽查系统</title>
+    <style>
+        :root {
+            --primary-blue: #003a70;
+            --secondary-blue: #0066cc;
+            --action-green: #00c851;
+            --action-red: #ff4444;
+            --text-dark: #2c3e50;
+            --card-bg: linear-gradient(145deg, #ffffff, #f8f9fa);
+            --disabled-gray: #a0a0a0;
+            --upload-success: #4caf50;
+            --upload-error: #f44336;
+            --upload-processing: #ff9800;
+            --accent-blue: #0077c8; /* 强调蓝 */
+        }
+
+        body {
+            font-family: "Microsoft YaHei", sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background: var(--primary-blue);
+            color: white;
+            padding: 15px 5%; /* Reduced padding */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+/* 排序指示器样式 */
+.sort-indicator {
+    display: inline-block;
+    margin-left: 8px;
+    transition: transform 0.3s ease;
+    font-size: 0.8em;
+}
+.sort-indicator::after {
+    content: "▲";
+    display: inline-block;
+    color: rgba(255,255,255,0.5);
+}
+th.asc .sort-indicator::after {
+    color: #fff;
+    transform: rotate(0deg);
+}
+th.desc .sort-indicator::after {
+    color: #fff;
+    transform: rotate(180deg);
+}
+.stats-table th:hover {
+    background: var(--secondary-blue);
+    transition: background 0.3s ease;
+}
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        #university-logo {
+            height: 60px;
+            transition: transform 0.3s ease;
+        }
+
+        #apartment-logo {
+            height: 50px;
+            transition: transform 0.3s ease;
+        }
+
+        #university-logo:hover, #apartment-logo:hover {
+            transform: scale(1.05);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        nav ul {
+            display: flex;
+            gap: 1rem; /* Reduced gap */
+            padding: 0;
+            margin: 0;
+            list-style: none;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 12px 22px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            font-weight: bold; /* 默认所有导航按钮加粗 */
+            font-size: 18px;
+            letter-spacing: 0.5px;
+        }
+
+        nav a:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateY(-2px);
+        }
+
+        #stats-link {
+            font-weight: bold;
+            background: rgba(255,255,255,0.2);
+        }
+
+        main {
+            flex: 1;
+            padding: 1rem 5%; /* Reduced padding */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+.export-btn {
+    background: var(--action-green);
+    padding: 8px 16px;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.export-btn:hover {
+    background: #009d47;
+    transform: translateY(-1px);
+}
+.export-btn::before {
+    content: "";
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+#exportExcel::before {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="white" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6m1.8 18H14l-2-3.4l-2 3.4H8.2l2.9-4.5L8.2 12H10l2 3.4l2-3.4h1.8l-2.9 4.5l2.9 4.5M13 9V3.5L18.5 9H13z"/></svg>');
+}
+#exportPDF::before {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="white" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6m-1.9 12.2h-1.5v3.3H9.2v-3.3H7.7v-1.5h4.4v1.5m3.1-1.5h3.5v1.1h-2.4v1h2.3v1.1h-2.3v1.2h2.4v1.1h-3.5v-5.5M14 9h5.5l-5.5-5.5V9z"/></svg>');
+}
+
+        .input-container {
+            display: flex;
+            width: 90%;
+            max-width: 1000px;
+            gap: 2rem;
+            margin: 1rem 0; /* Reduced margin */
+        }
+
+        .input-section {
+            background: white;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    padding: 1.5rem;
+    flex: 1;
+    position: relative;
+    min-width: 600px;
+    /* 新增flex布局 */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+justify-content: center;
+/* 优化高度设置 */
+    min-height: 100px;
+    height: 30vh; /* 新增视口单位响应式高度 */
+    max-height: 150px; /* 防止过高 */
+        }
+
+/* 新增上传组样式 */
+.file-upload-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+    justify-content: center;
+/* 新增动态间距 */
+    margin: clamp(10px, 3vh, 20px) 0; /* 根据视口高度调整 */
+}
+
+        .score-time-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            padding: 1.5rem;
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0; /* 禁止收缩 */
+    gap: 2rem !important; /* 覆盖原有间距 */
+        }
+
+        #file-input {
+    margin: 1rem 0;
+    padding: 0.5rem;
+    border: 2px solid var(--primary-blue);
+    border-radius: 6px;
+    width: 60%; /* 调整宽度 */
+    max-width: 300px;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+        #file-input.upload-success {
+            border-color: var(--upload-success);
+            background-color: rgba(76, 175, 80, 0.1);
+        }
+
+        #file-input.upload-error {
+            border-color: var(--upload-error);
+            background-color: rgba(244, 67, 54, 0.1);
+        }
+
+        #file-input.upload-processing {
+            border-color: var(--upload-processing);
+            background-color: rgba(255, 152, 0, 0.1);
+        }
+
+        .file-input-label {
+            display: block;
+            margin-bottom: -0.5rem;
+            font-weight: bold;
+            color: var(--text-dark);
+            transition: color 0.3s ease;
+        }
+
+        .file-input-label.upload-success {
+            color: var(--upload-success);
+        }
+
+        .file-input-label.upload-error {
+            color: var(--upload-error);
+        }
+
+        .file-input-label.upload-processing {
+            color: var(--upload-processing);
+        }
+
+        button {
+            padding: 12px 28px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            background: var(--secondary-blue);
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+            min-width: 150px;
+        }
+
+        /* 按钮扫过效果 */
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: all 0.6s ease;
+        }
+
+        button:hover::before {
+            left: 100%;
+        }
+
+        /* 按钮按压效果 */
+        button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 50%;
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        button:active::after {
+            transform: translate(-50%, -50%) scale(20);
+            opacity: 0;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        button:active {
+            transform: translateY(1px) scale(0.98);
+        }
+
+        #action-button[disabled] {
+            background: var(--disabled-gray);
+            cursor: not-allowed;
+            position: relative;
+        }
+
+        /* 禁用状态更明显的视觉反馈 */
+        #action-button[disabled]::after {
+            content: "请先上传学生数据";
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text-dark);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+
+* 确保按钮正确显示 */
+#action-button {
+    margin-top: 1rem;
+    display: inline-block; /* 保持行内块特性 */
+}
+        #action-button[disabled]:hover::after {
+            opacity: 1;
+        }
+
+        #action-button.start {
+            background: var(--action-green);
+        }
+
+        #action-button.stop {
+            background: var(--action-red);
+            animation: pulse 1.5s infinite;
+        }
+
+        /* 停止按钮脉动动画 */
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(255, 68, 68, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 68, 68, 0);
+            }
+        }
+
+        .student-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem; /* Reduced gap */
+            width: 95%;
+            padding: 0.5rem; /* Reduced padding */
+            margin-top: 1rem; /* Reduced margin */
+        }
+
+        .student-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1rem; /* Reduced padding */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .student-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+
+        .student-photo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 0.5rem; /* Reduced margin */
+            transition: opacity 0.3s ease;
+border-bottom: 6px solid var(--accent-blue);
+        }
+
+        .student-info {
+           font-size: 24px;
+         line-height: 1.6;
+         color: var(--text-dark);
+         padding: 1rem; /* 增加内边距 */
+         background: rgba(0,58,112);
+         border-radius: 8px;
+         opacity: 0;
+         transition: opacity 0.3s ease;
+         white-space: normal; /* 允许文本换行 */
+         overflow: visible; /* 内容完全显示，不裁剪、不滚动 */
+         max-height: 200px; /* 设置最大高度 */
+        }
+
+        .student-info.active {
+            opacity: 1;
+        }
+
+
+        /* 新增清理按钮样式 */
+        .clear-data-btn {
+            background: var(--action-red);
+            padding: 8px 16px;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .clear-data-btn:hover {
+            background: #ff2222;
+            transform: translateY(-1px);
+        }
+
+
+/* 新增样式 */
+.form-row {
+    display: grid;
+    grid-template-columns: 57% 34%;
+    gap: 7px;
+    width: 100%;
+    margin: 5px 0;
+    margin-left: 4px;
+}
+/* 响应式调整 */
+@media (max-width: 480px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+        .answer-form {
+            display: none; /* 初始隐藏 */
+         margin-top: 0rem;
+         padding: 0.5rem;
+         background: rgba(255, 255, 255, 0.95);
+         border-radius: 8px;
+box-shadow: 0 4px 20px rgba(0, 58, 112, 0.8);
+animation: formSlideIn 0.4s ease-out;
+         text-align: center;
+        }
+
+@keyframes formSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+        .answer-form input {
+            width: 90%;
+            padding: 8px;
+            margin: 3px 0; /* Reduced margin */
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 20px;
+transition: border-width 0.3s cubic-bezier(0.4, 0, 0.2, 1) ;
+transition: 
+        border-color 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+        box-shadow 0.4s ease-out;
+    position: relative;
+padding-right: 10px;
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 32px 32px;
+        }
+
+/* 正确状态 */
+.answer-form input.correct {
+    color: var(--action-green);
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2300c851"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>');
+
+}
+/* 错误状态 */
+.answer-form input.incorrect {
+    color: var(--action-red);
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ff4444"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>');
+    animation: shake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+/* 空输入状态 */
+.answer-form input.empty {
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ff4444"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>');
+}
+/* 晃动动画 */
+@keyframes shake {
+    10%, 90% { transform: translateX(-2px); }
+    20%, 80% { transform: translateX(3px); }
+    30%, 50%, 70% { transform: translateX(-4px); }
+    40%, 60% { transform: translateX(4px); }
+}
+
+
+
+/* 输入框提示文字样式 */
+.answer-form input::placeholder {
+    color: #a8b5c6;
+    font-weight: 300;
+    opacity: 1; /* 确保兼容性 */
+}
+
+/* 聚焦状态 */
+.answer-form input:focus {
+    outline: none;
+    border-color: #4A8BFF; /* 主蓝 */
+    box-shadow: 
+        0 0 0 3px rgba(74, 139, 255, 0.3), /* 基础光晕 */
+        0 0 10px 5px rgba(74, 139, 255, 0.15); /* 扩散层 */
+    animation: input-wave 1.6s ease-in-out infinite;
+}
+/* 水波纹动画 */
+@keyframes input-wave {
+    0%, 100% {
+        box-shadow: 
+            0 0 0 3px rgba(74, 139, 255, 0.3),
+            0 0 10px 5px rgba(74, 139, 255, 0.15);
+    }
+    50% {
+        box-shadow: 
+            0 0 0 6px rgba(74, 139, 255, 0.15),
+            0 0 15px 8px rgba(74, 139, 255, 0.1);
+    }
+}
+/* 微动效优化 */
+.answer-form input:focus {
+    transform: translateZ(0); /* 启用GPU加速 */
+    backface-visibility: hidden;
+}
+/* 降级方案 */
+@supports not (animation: input-wave) {
+    .answer-form input:focus {
+        border-width: 2px;
+        box-shadow: 0 0 8px rgba(74, 139, 255, 0.4);
+    }
+}
+
+/* 修复父容器背景影响 */
+.answer-form, .student-info {
+    background: rgba(0,58,112,0.1);
+    isolation: isolate; /* 阻止混合模式影响子元素 */
+}
+
+        .correct {
+            color: var(--action-green);
+            font-weight: bold;
+        }
+
+        .incorrect {
+            color: var(--action-red);
+            position: relative;
+            margin-right: 5px;
+        }
+
+        .correct-answer {
+            color: var(--action-red);
+            font-weight: bold;
+        }
+
+        .empty-answer::after {
+            content: "×";
+            color: var(--action-red);
+            font-weight: bold;
+        }
+
+        .time-display {
+            font-size: 25px;
+            color: var(--text-dark);
+            font-weight: bold;
+padding: 0px 20px;
+        }
+
+        .score-display {
+            background: white;
+            color: var(--action-red);
+            padding: -10px 20px;
+            border-radius: 8px;
+            font-size: 58px;
+            font-weight: bold;
+            display: none;
+letter-spacing: 0px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 58, 112, 0.95);
+            backdrop-filter: blur(3px);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal.show {
+            opacity: 1;
+        }
+
+        .modal-content {
+            margin: auto;
+            display: block;
+            width: 80%;
+            max-width: 700px;
+            max-height: 80vh;
+            margin-top: 10vh;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .modal.show .modal-content {
+            transform: scale(1);
+        }
+
+        .close {
+            position: absolute;
+            top: 25px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            opacity: 0.7;
+        }
+
+        .close:hover {
+            color: #ff4444;
+            transform: scale(1.2);
+            opacity: 1;
+        }
+
+        /* 登记模态框样式 */
+        .register-modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(3px);
+        }
+
+        .register-modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 500px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            animation: modalopen 0.3s;
+        }
+
+        @keyframes modalopen {
+            from {opacity: 0; transform: translateY(-50px);}
+            to {opacity: 1; transform: translateY(0);}
+        }
+
+        .register-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .register-form input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .register-form button {
+            padding: 10px;
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .register-form button:hover {
+            background: var(--secondary-blue);
+        }
+
+        /* 分数统计模态框 */
+        .stats-modal {
+            display: none;
+            position: fixed;
+            z-index: 1002;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(3px);
+        }
+
+        .stats-modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    animation: modalopen 0.3s;
+    display:block; /* 新增 */
+    width: fit-content; /* 新增 */
+
+}
+
+        .stats-table {
+    width: auto; /* 修改为自动宽度 */
+    border-collapse: collapse;
+    margin-top: 20px;
+    table-layout: auto; /* 新增 */
+}
+
+        .stats-table th, 
+.stats-table td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: center;
+    white-space: nowrap; /* 新增：防止文字换行 */
+}
+
+        .stats-table th {
+    background-color: var(--primary-blue);
+    color: white;
+    cursor: pointer;
+    position: sticky; /* 新增：固定表头 */
+    top: 0;
+}
+/* 新增响应式调整 */
+@media (max-width: 768px) {
+    .stats-modal-content {
+        width: 95%;
+        margin: 2% auto;
+    }
+    
+    .stats-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+}
+
+        .stats-table th:hover {
+            background-color: var(--secondary-blue);
+        }
+
+        .stats-table tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .stats-table tr:hover {
+            background-color: #e9e9e9;
+        }
+
+        .stats-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .stats-title {
+            font-size: 24px;
+            color: var(--primary-blue);
+        }
+
+        .stats-close {
+            font-size: 28px;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+        }
+
+        .stats-close:hover {
+            color: var(--action-red);
+        }
+
+        footer {
+            background: var(--primary-blue);
+            color: white;
+            text-align: center;
+            padding: 1.5rem 0;
+            margin-top: auto;
+        }
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            
+            .logo-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .input-container {
+                display: flex;
+    flex-wrap: nowrap; /* 新增防止换行 */
+    align-items: flex-start; /* 顶部对齐 */
+    gap: 1rem; /* 调整间距 */
+            }
+            
+            .score-time-section {
+                width: 100%;
+            }
+            
+            .student-display {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-content {
+                width: 95%;
+            }
+
+            .stats-modal-content {
+                width: 95%;
+                margin: 10% auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="logo-container">
+            <img id="university-logo" src="images/img_logo/nuaa_logo.png" alt="南京航空航天大学校徽">
+            <img id="apartment-logo" src="images/img_logo/apartment_logo.png" alt="公寓管理中心logo">
+        </div>
+        <h1>楼栋安全人脸抽查系统</h1>
+        <nav>
+            <ul>
+               <li><a href="#" id="home-link">首页</a></li>
+ <li><a href="docs/系统使用说明书.docx" download>使用说明</a></li>
+                <li><a href="#" id="stats-link">分数统计</a></li>
+<li><a href="html/datascreen.html" id="stats-link" target="_blank">数据大屏</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <div class="input-container">
+            <div class="input-section">
+    <label for="file-input" class="file-input-label">请上传学生数据文件</label>
+    <div class="file-upload-group">
+        <input type="file" id="file-input" accept=".xlsx,.xls">
+        <button id="action-button" disabled>开始抽查</button>
+    </div>
+</div>
+            
+            <div class="score-time-section">
+                <div class="time-display" id="time-display">用时: 00:00</div>
+                <div class="score-display" id="score-display">
+                    <span id="score-value">0</span>分
+                </div>
+            </div>
+        </div>
+
+        <div class="student-display">
+            <!-- 学生卡片结构保持不变 -->
+            <div class="student-card">
+                <img class="student-photo" id="student-photo-1" src="images/img_logo/default_avatar.png" alt="学生照片">
+                <div class="answer-form" id="answer-form-1" style="display: none;">
+                    <input type="text" placeholder="姓名" id="name-1">
+                    <div class="form-row">
+                          <input type="text" placeholder="学院" id="college-1" list="collegeOptions">
+                          <input type="text" placeholder="类别" id="category-1" list="categoryOptions">
+                    </div>
+                    <!-- 新增楼层和房间号输入框 -->
+                    <input type="text" placeholder="楼层" id="floor-1">
+                    <input type="text" placeholder="房间号" id="room-1">
+                </div>
+                <div class="student-info" id="student-info-1"></div>
+            </div>
+            <div class="student-card">
+                <img class="student-photo" id="student-photo-2" src="images/img_logo/default_avatar.png" alt="学生照片">
+                <div class="answer-form" id="answer-form-2" style="display: none;">
+                    <input type="text" placeholder="姓名" id="name-2">
+                    <div class="form-row">
+                          <input type="text" placeholder="学院" id="college-2" list="collegeOptions">
+                          <input type="text" placeholder="类别" id="category-2" list="categoryOptions">
+                    </div>
+                    <input type="text" placeholder="楼层" id="floor-2">
+                    <input type="text" placeholder="房间号" id="room-2">
+                </div>
+                <div class="student-info" id="student-info-2"></div>
+            </div>
+            <div class="student-card">
+                <img class="student-photo" id="student-photo-3" src="images/img_logo/default_avatar.png" alt="学生照片">
+                <div class="answer-form" id="answer-form-3" style="display: none;">
+                    <input type="text" placeholder="姓名" id="name-3">
+                    <div class="form-row">
+                          <input type="text" placeholder="学院" id="college-3" list="collegeOptions">
+                          <input type="text" placeholder="类别" id="category-3" list="categoryOptions">
+                    </div>
+                    <input type="text" placeholder="楼层" id="floor-3">
+                    <input type="text" placeholder="房间号" id="room-3">
+                </div>
+                <div class="student-info" id="student-info-3"></div>
+            </div>
+            <div class="student-card">
+                <img class="student-photo" id="student-photo-4" src="images/img_logo/default_avatar.png" alt="学生照片">
+                <div class="answer-form" id="answer-form-4" style="display: none;">
+                    <input type="text" placeholder="姓名" id="name-4">
+                    <div class="form-row">
+                          <input type="text" placeholder="学院" id="college-4" list="collegeOptions">
+                          <input type="text" placeholder="类别" id="category-4" list="categoryOptions">
+                    </div>
+                    <input type="text" placeholder="楼层" id="floor-4">
+                    <input type="text" placeholder="房间号" id="room-4">
+                </div>
+                <div class="student-info" id="student-info-4"></div>
+            </div>
+            <div class="student-card">
+                <img class="student-photo" id="student-photo-5" src="images/img_logo/default_avatar.png" alt="学生照片">
+                <div class="answer-form" id="answer-form-5" style="display: none;">
+                    <input type="text" placeholder="姓名" id="name-5">
+                    <div class="form-row">
+                          <input type="text" placeholder="学院" id="college-5" list="collegeOptions">
+                          <input type="text" placeholder="类别" id="category-5" list="categoryOptions">
+                    </div>
+                    <input type="text" placeholder="楼层" id="floor-5">
+                    <input type="text" placeholder="房间号" id="room-5">
+                </div>
+                <div class="student-info" id="student-info-5"></div>
+            </div>
+        </div>
+    </main>
+
+    <div id="myModal" class="modal">
+        <span class="close">&times;</span>
+        <img class="modal-content" id="modalImg">
+    </div>
+
+    <!-- 登记模态框 -->
+    <div id="registerModal" class="register-modal">
+        <div class="register-modal-content">
+            <h2>管理员登记</h2>
+            <p>请填写您的信息以开始抽查</p>
+            <form class="register-form" id="registerForm">
+                <input type="text" id="adminName" placeholder="您的姓名" required>
+                <input type="text" id="adminId" placeholder="工号" required>
+                <button type="submit">开始抽查</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 分数统计模态框 -->
+    <div id="statsModal" class="stats-modal">
+        <div class="stats-modal-content">
+            <div class="stats-header">
+                <div style="display: flex; gap: 1rem; align-items: center">
+                    <div class="stats-title">分数统计</div>
+                    <div class="clear-data-btn" id="clearDataBtn">清除数据</div>
+                    <div class="export-btn" id="exportExcel">导出Excel</div>
+                </div>
+                <span class="stats-close">&times;</span>
+            </div>
+            <table class="stats-table" id="statsTable">
+                <thead>
+                    <tr>
+                        <th data-sort="name">管理员姓名<span class="sort-indicator"></span></th>
+                        <th data-sort="id">工号<span class="sort-indicator"></span></th>
+                        <th data-sort="date">答题日期<span class="sort-indicator"></span></th>
+                        <th data-sort="time">答题用时<span class="sort-indicator"></span></th>
+                        <th data-sort="score">总分<span class="sort-indicator"></span></th>
+                        <th data-sort="nameScore">姓名得分<span class="sort-indicator"></span></th>
+                        <th data-sort="collegeScore">学院得分<span class="sort-indicator"></span></th>
+                        <th data-sort="categoryScore">类别得分<span class="sort-indicator"></span></th>
+                        <th data-sort="floorScore">楼层得分<span class="sort-indicator"></span></th>
+                        <th data-sort="roomScore">房间号得分<span class="sort-indicator"></span></th>
+                    </tr>
+                </thead>
+                <tbody id="statsTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+<datalist id="categoryOptions">
+    <option value="本科生">
+    <option value="硕士生">
+    <option value="博士生">
+</datalist>
+<datalist id="collegeOptions">
+    <option value="航空学院" data-keys="1 hk">
+    <option value="能源与动力学院" data-keys="2 ny">
+    <option value="自动化学院" data-keys="3 zdh">
+    <option value="电子信息工程学院" data-keys="4 dz">
+    <option value="机电学院" data-keys="5 jd">
+    <option value="材料科学与技术学院" data-keys="6 cl">
+    <option value="民航学院" data-keys="7 mh">
+    <option value="数学学院" data-keys="8 sx">
+    <option value="经济与管理学院" data-keys="9 jg">
+    <option value="人文与社会科学学院" data-keys="10 rw">
+    <option value="艺术学院" data-keys="11 ys">
+    <option value="外国语学院" data-keys="12 wy">
+    <option value="航天学院" data-keys="15 ht">
+    <option value="计算机科学与技术学院/软件学院" data-keys="16 jsj">
+    <option value="马克思主义学院" data-keys="17 mks">
+    <option value="长空学院" data-keys="18 ck">
+    <option value="国际教育学院" data-keys="国教 gj">
+    <option value="通用航空与飞行学院" data-keys="20 ty">
+    <option value="物理学院" data-keys="21 wl">
+    <option value="继续教育（高等职业技术）学院" data-keys="继 jx">
+    <option value="集成电路学院" data-keys="集 jc">
+    <option value="国家卓越工程师学院" data-keys="卓越 zy">
+    <option value="人工智能学院" data-keys="人 rg">
+</datalist>
+
+    <footer>
+        &copy; 南京航空航天大学后勤保障部公寓服务中心 版权所有；&copy; 2025 [黄兰兰]。
+    </footer>
+
+
+<!-- 在xlsx库引用之后添加 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+// 在页面加载时添加初始化提示
+        window.addEventListener('load', function() {
+            if (allTestResults.length > 0) {
+                const shouldClear = confirm('检测到历史考核数据，是否清除后开始新一轮的考核？');
+                if (shouldClear) {
+                    clearAllData();
+                }
+            }
+        });
+
+        // 新增数据清理功能
+        const clearDataBtn = document.getElementById('clearDataBtn');
+// 在现有变量声明后添加
+const homeLink = document.getElementById('home-link');
+function resetToInitialState() {
+    // 停止所有定时器
+    clearInterval(intervalId);
+    clearInterval(timerInterval);
+    isTimerRunning = false;
+    
+    // 重置文件上传状态
+    fileInput.value = '';
+    fileInput.classList.remove('upload-success', 'upload-error', 'upload-processing');
+    fileInputLabel.textContent = '请上传学生名单文件';
+    fileInputLabel.classList.remove('upload-success', 'upload-error', 'upload-processing');
+    actionButton.disabled = true;
+    actionButton.textContent = '开始考核';
+    actionButton.classList.remove('start', 'stop');
+    
+    // 清空学生数据
+    students = [];
+    
+    // 重置学生显示
+    studentPhotos.forEach(photo => photo.src = 'images/img_logo/default_avatar.png');
+    studentInfos.forEach(info => {
+        info.innerHTML = '';
+        info.classList.remove('active');
+    });
+    
+    // 重置答案表单
+    answerForms.forEach(form => {
+        form.style.display = 'none';
+        form.querySelectorAll('input').forEach(input => {
+            input.value = '';
+            input.classList.remove('correct', 'incorrect', 'empty');
+        });
+    });
+    
+    // 重置分数和时间
+    scoreDisplay.style.display = 'none';
+    scoreValue.textContent = '0';
+    elapsedTime = 0;
+    timeDisplay.textContent = '计时: 00:00';
+    
+    // 关闭所有模态框
+    modal.style.display = 'none';
+    registerModal.style.display = 'none';
+    statsModal.style.display = 'none';
+    
+    // 重置管理员信息
+    adminInfo.name = '';
+    adminInfo.id = '';
+}
+homeLink.addEventListener('click', function(e) {
+    e.preventDefault();
+    resetToInitialState();
+});
+        
+        function clearAllData() {
+            localStorage.removeItem('allTestResults');
+            allTestResults = [];
+            updateStatsTable();
+            alert('历史数据已成功清除！');
+        }
+
+        clearDataBtn.addEventListener('click', function() {
+            const confirmClear = confirm('确定要清除所有历史考核数据吗？此操作不可恢复！');
+            if (confirmClear) {
+                clearAllData();
+            }
+        });
+
+
+        // 保持原有JavaScript功能，添加样式类控制
+        let students = [];
+        const actionButton = document.getElementById('action-button');
+        const fileInput = document.getElementById('file-input');
+        const fileInputLabel = document.querySelector('.file-input-label');
+        const studentPhotos = document.querySelectorAll('.student-photo');
+        const studentInfos = document.querySelectorAll('.student-info');
+        const answerForms = document.querySelectorAll('.answer-form');
+        let intervalId;
+        let currentIndices = [0, 1, 2, 3, 4];
+        const modal = document.getElementById('myModal');
+        const modalImg = document.getElementById('modalImg');
+        const registerModal = document.getElementById('registerModal');
+        const registerForm = document.getElementById('registerForm');
+        const scoreDisplay = document.getElementById('score-display');
+        const scoreValue = document.getElementById('score-value');
+        const timeDisplay = document.getElementById('time-display');
+        const statsLink = document.getElementById('stats-link');
+        const statsModal = document.getElementById('statsModal');
+        const statsTableBody = document.getElementById('statsTableBody');
+        const statsTable = document.getElementById('statsTable');
+        const statsClose = document.querySelector('.stats-close');
+        
+        let adminInfo = {
+            name: '',
+            id: ''
+        };
+
+        // 计时器相关变量
+        let startTime;
+        let elapsedTime = 0;
+        let timerInterval;
+        let isTimerRunning = false;
+
+        // 存储所有答题记录
+        let allTestResults = JSON.parse(localStorage.getItem('allTestResults')) || [];
+
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // 显示上传处理状态
+                fileInput.classList.add('upload-processing');
+                fileInputLabel.classList.add('upload-processing');
+                fileInputLabel.textContent = '处理中...';
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                        students = XLSX.utils.sheet_to_json(worksheet).map(item => ({
+                            name: item['姓名'],
+                            college: item['学院'],
+                            category: item['类别'],
+                            floor: item['楼层'],    // 新增楼层字段
+                            room: item['房间号'],    // 新增房间号字段
+                            photo: item['照片'] || 'img/default_avatar.png'
+                        }));
+                        
+                        // 更新上传成功状态
+                        fileInput.classList.remove('upload-processing');
+                        fileInput.classList.add('upload-success');
+                        fileInputLabel.classList.remove('upload-processing');
+                        fileInputLabel.classList.add('upload-success');
+                        fileInputLabel.textContent = '上传成功: ' + file.name;
+                        
+                        actionButton.disabled = false;
+                        actionButton.textContent = '开始抽查';
+                        actionButton.classList.remove('start', 'stop');
+                    } catch (error) {
+                        // 更新上传失败状态
+                        fileInput.classList.remove('upload-processing');
+                        fileInput.classList.add('upload-error');
+                        fileInputLabel.classList.remove('upload-processing');
+                        fileInputLabel.classList.add('upload-error');
+                        fileInputLabel.textContent = '上传失败: 文件格式错误';
+                        console.error('Error processing file:', error);
+                    }
+                };
+                
+                reader.onerror = function() {
+                    // 更新上传失败状态
+                    fileInput.classList.remove('upload-processing');
+                    fileInput.classList.add('upload-error');
+                    fileInputLabel.classList.remove('upload-processing');
+                    fileInputLabel.classList.add('upload-error');
+                    fileInputLabel.textContent = '上传失败: 读取文件错误';
+                };
+                
+                reader.readAsArrayBuffer(file);
+            }
+        });
+
+        actionButton.addEventListener('click', function() {
+            if (this.textContent === '开始抽查') {
+                // 显示登记模态框
+                registerModal.style.display = 'block';
+            } else if (this.textContent === '停止抽查') {
+                this.textContent = '计算分数';
+                this.classList.add('start');
+                this.classList.remove('stop');
+                clearInterval(intervalId);
+
+                // 显示答案输入框
+                answerForms.forEach(form => {
+                    form.style.display = 'block';
+                });
+
+                // 开始计时器
+                startTimer();
+
+            } else if (this.textContent === '计算分数') {
+                this.textContent = '开始抽查';
+                this.classList.remove('start');
+                
+                // 验证答案并计算分数
+                let totalScore = 0;
+                let nameScore = 0;
+                let collegeScore = 0;
+                let categoryScore = 0;
+                let floorScore = 0;  // 新增楼层得分
+                let roomScore = 0;   // 新增房间号得分
+                
+                currentIndices.forEach((index, i) => {
+                    const student = students[index];
+                    const nameInput = document.getElementById(`name-${i+1}`);
+                    const collegeInput = document.getElementById(`college-${i+1}`);
+                    const categoryInput = document.getElementById(`category-${i+1}`);
+                    const floorInput = document.getElementById(`floor-${i+1}`);    // 新增
+                    const roomInput = document.getElementById(`room-${i+1}`);      // 新增
+                    
+                    // 重置所有状态
+                    [nameInput, collegeInput, categoryInput, floorInput, roomInput].forEach(input => {
+                        input.classList.remove('correct', 'incorrect', 'empty');
+                    });
+
+ // 验证姓名（10分）
+                    if (nameInput.value.trim() === student.name) {
+                        nameInput.classList.add('correct');
+                        nameScore += 10;
+                    } else if (!nameInput.value.trim()) {
+                        nameInput.classList.add('empty');
+                    } else {
+                        nameInput.classList.add('incorrect');
+                    }
+                    // 验证学院（2分）
+                    if (collegeInput.value.trim() === student.college) {
+                        collegeInput.classList.add('correct');
+                        collegeScore += 2;
+                    } else if (!collegeInput.value.trim()) {
+                        collegeInput.classList.add('empty');
+                    } else {
+                        collegeInput.classList.add('incorrect');
+                    }
+                    // 验证类别（2分）
+                    if (categoryInput.value.trim() === student.category) {
+                        categoryInput.classList.add('correct');
+                        categoryScore += 2;
+                    } else if (!categoryInput.value.trim()) {
+                        categoryInput.classList.add('empty');
+                    } else {
+                        categoryInput.classList.add('incorrect');
+                    }
+                    // 验证楼层（2分）
+                    if (floorInput.value.trim() === student.floor.toString()) {
+                        floorInput.classList.add('correct');
+                        floorScore += 2;
+                    } else if (!floorInput.value.trim()) {
+                        floorInput.classList.add('empty');
+                    } else {
+                        floorInput.classList.add('incorrect');
+                    }
+                    // 验证房间号（4分）
+                    if (roomInput.value.trim() === student.room.toString()) {
+                        roomInput.classList.add('correct');
+                        roomScore += 4;
+                    } else if (!roomInput.value.trim()) {
+                        roomInput.classList.add('empty');
+                    } else {
+                        roomInput.classList.add('incorrect');
+                    }
+                    
+                    // 显示正确答案
+                    let nameDisplay = nameInput.value.trim() === student.name ? 
+                        `<span class="correct">${student.name}</span>` : 
+                        `<span class="correct-answer">${student.name}</span>`;
+                    
+                    let collegeDisplay = collegeInput.value.trim() === student.college ? 
+                        `<span class="correct">${student.college}</span>` : 
+                        `<span class="correct-answer">${student.college}</span>`;
+                    
+                    let categoryDisplay = categoryInput.value.trim() === student.category ? 
+                        `<span class="correct">${student.category}</span>` : 
+                        `<span class="correct-answer">${student.category}</span>`;
+                    
+                    let floorDisplay = floorInput.value.trim() === student.floor.toString() ? 
+                        `<span class="correct">${student.floor}</span>` : 
+                        `<span class="correct-answer">${student.floor}</span>`;
+                    
+                    let roomDisplay = roomInput.value.trim() === student.room.toString() ? 
+                        `<span class="correct">${student.room}</span>` : 
+                        `<span class="correct-answer">${student.room}</span>`;
+                    
+                    studentInfos[i].innerHTML = `
+                        姓名：${nameDisplay}<br>
+                        学院：${collegeDisplay}<br>
+                        类别：${categoryDisplay}<br>
+                        楼层：${floorDisplay}<br>
+                        房间号：${roomDisplay}
+                    `;
+                    studentInfos[i].classList.add('active');
+                });
+                
+               totalScore = nameScore + collegeScore + categoryScore + floorScore + roomScore;
+                
+                // 显示分数
+                scoreValue.textContent = totalScore;
+                scoreDisplay.style.display = 'block';
+                
+                // 停止计时器
+                stopTimer();
+                
+                // 保存答题记录
+                const testResult = {
+                    name: adminInfo.name,
+                    id: adminInfo.id,
+                    date: new Date().toLocaleString(),
+                    time: formatTime(elapsedTime),
+                    timeInSeconds: elapsedTime,
+                    score: totalScore,
+                    nameScore: nameScore,
+                    collegeScore: collegeScore,
+                    categoryScore: categoryScore,
+                    floorScore: floorScore,  // 新增字段
+                    roomScore: roomScore     // 新增字段
+                };
+                
+                allTestResults.push(testResult);
+                localStorage.setItem('allTestResults', JSON.stringify(allTestResults));
+                
+                // 重置计时器
+                elapsedTime = 0;
+            }
+        });
+
+        // 计时器函数
+        function startTimer() {
+            if (!isTimerRunning) {
+                startTime = Date.now() - elapsedTime * 1000;
+                timerInterval = setInterval(function() {
+                    elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+                    timeDisplay.textContent = `用时: ${formatTime(elapsedTime)}`;
+                }, 1000);
+                isTimerRunning = true;
+            }
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // 登记表单提交
+        registerForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const adminName = document.getElementById('adminName').value.trim();
+            const adminId = document.getElementById('adminId').value.trim();
+            
+            if (!adminName || !adminId) {
+                alert('请填写完整的姓名和工号！');
+                return;
+            }
+            
+            adminInfo.name = adminName;
+            adminInfo.id = adminId;
+            
+            // 关闭登记模态框
+            registerModal.style.display = 'none';
+            
+            // 开始抽查
+            actionButton.textContent = '停止抽查';
+            actionButton.classList.add('stop');
+            actionButton.classList.remove('start');
+            studentInfos.forEach(info => {
+                info.textContent = '';
+                info.classList.remove('active');
+            });
+            
+            // 隐藏答案输入框
+            answerForms.forEach(form => {
+                form.style.display = 'none';
+            });
+            
+            // 清除之前的输入和样式
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById(`name-${i}`).value = '';
+                document.getElementById(`college-${i}`).value = '';
+                document.getElementById(`category-${i}`).value = '';
+                document.getElementById(`name-${i}`).className = '';
+                document.getElementById(`college-${i}`).className = '';
+                document.getElementById(`category-${i}`).className = '';
+            }
+            
+            // 隐藏分数显示
+            scoreDisplay.style.display = 'none';
+            
+            // 重置计时器
+            elapsedTime = 0;
+            timeDisplay.textContent = '用时: 00:00';
+            
+            intervalId = setInterval(() => {
+                const indices = new Set();
+                while(indices.size < 5) {
+                    indices.add(Math.floor(Math.random() * students.length));
+                }
+                currentIndices = [...indices];
+                studentPhotos.forEach((photo, i) => {
+                    photo.src = students[currentIndices[i]].photo;
+                });
+            }, 100);
+        });
+
+        // 分数统计功能
+        statsLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            updateStatsTable();
+            statsModal.style.display = 'block';
+        });
+
+        statsClose.addEventListener('click', function() {
+            statsModal.style.display = 'none';
+        });
+
+        window.addEventListener('click', function(e) {
+            if (e.target === statsModal) {
+                statsModal.style.display = 'none';
+            }
+        });
+
+        // 更新分数统计表格
+        function updateStatsTable() {
+            const sortedResults = [...allTestResults].sort((a, b) => b.score - a.score);
+            statsTableBody.innerHTML = '';
+            
+            if (sortedResults.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="10" style="text-align: center; color: var(--action-red);">暂无任何考核记录</td>';
+                statsTableBody.appendChild(row);
+                return;
+            }
+            
+            sortedResults.forEach(result => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${result.name}</td>
+                    <td>${result.id}</td>
+                    <td>${result.date}</td>
+                    <td>${result.time}</td>
+                    <td>${result.score}</td>
+                    <td>${result.nameScore}</td>
+                    <td>${result.collegeScore}</td>
+                    <td>${result.categoryScore}</td>
+                    <td>${result.floorScore}</td>
+                    <td>${result.roomScore}</td>
+                `;
+                statsTableBody.appendChild(row);
+            });
+        }
+
+        // 表格排序功能
+        statsTable.querySelectorAll('th[data-sort]').forEach(th => {
+            th.addEventListener('click', function() {
+                const sortKey = this.getAttribute('data-sort');
+                const isAsc = this.classList.contains('asc');
+                
+                // 清除所有排序箭头
+                statsTable.querySelectorAll('th').forEach(header => {
+                    header.classList.remove('asc', 'desc');
+                });
+                
+                // 设置当前排序方向
+                this.classList.toggle('asc', !isAsc);
+                this.classList.toggle('desc', isAsc);
+                
+                // 排序数据
+                const sortedResults = [...allTestResults].sort((a, b) => {
+                    // 特殊处理时间排序
+                    if (sortKey === 'time') {
+                        return isAsc ? a.timeInSeconds - b.timeInSeconds : b.timeInSeconds - a.timeInSeconds;
+                    }
+                    if (a[sortKey] < b[sortKey]) return isAsc ? 1 : -1;
+                    if (a[sortKey] > b[sortKey]) return isAsc ? -1 : 1;
+                    return 0;
+                });
+                
+                // 更新表格
+                statsTableBody.innerHTML = '';
+                sortedResults.forEach(result => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${result.name}</td>
+                        <td>${result.id}</td>
+                        <td>${result.date}</td>
+                        <td>${result.time}</td>
+                        <td>${result.score}</td>
+                        <td>${result.nameScore}</td>
+                        <td>${result.collegeScore}</td>
+                        <td>${result.categoryScore}</td>
+                        <td>${result.floorScore}</td>
+                        <td>${result.roomScore}</td>
+                    `;
+                    statsTableBody.appendChild(row);
+                });
+            });
+        });
+
+        // 模态框功能
+        document.querySelector('.close').addEventListener('click', function() {
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+        });
+        
+        window.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                modal.classList.remove('show');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+            }, 300);
+            }
+            if (e.target === registerModal) {
+                registerModal.style.display = 'none';
+            }
+        });
+        
+        studentPhotos.forEach(photo => {
+            photo.addEventListener('click', function() {
+                modal.style.display = 'block';
+                modalImg.src = this.src;
+                setTimeout(() => {
+                    modal.classList.add('show');
+                }, 10);
+            });
+        });
+
+// 导出Excel
+document.getElementById('exportExcel').addEventListener('click', () => {
+    const data = allTestResults.map(item => ({
+        '管理员姓名': item.name,
+        '工号': item.id,
+        '答题日期': item.date,
+        '答题用时': item.time,
+        '总分': item.score,
+        '姓名得分': item.nameScore,
+        '学院得分': item.collegeScore,
+        '类别得分': item.categoryScore,
+        '楼层得分': item.floorScore,  // 新增字段
+        '房间号得分': item.roomScore   // 新增字段
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "考核数据");
+    XLSX.writeFile(workbook, `考核统计_${new Date().toLocaleDateString()}.xlsx`);
+});
+// 导出PDF（需要jspdf库）
+document.getElementById('exportPDF').addEventListener('click', () => {
+    const doc = new jspdf.jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+    });
+    const headers = [
+        '管理员姓名', 
+        '工号', 
+        '答题日期', 
+        '答题用时', 
+        '总分', 
+        '姓名得分', 
+        '学院得分', 
+        '类别得分'
+    ];
+    const data = allTestResults.map(item => [
+        item.name,
+        item.id,
+        item.date,
+        item.time,
+        item.score,
+        item.nameScore,
+        item.collegeScore,
+        item.categoryScore
+    ]);
+    doc.autoTable({
+        head: [headers],
+        body: data,
+        theme: 'grid',
+        styles: { fontSize: 10 },
+        headerStyles: { 
+            fillColor: [0, 58, 112],
+            textColor: 255
+        },
+        margin: { top: 20 },
+        didDrawPage: (data) => {
+            doc.setFontSize(18);
+            doc.text('公寓管理员考核统计', 
+                doc.internal.pageSize.width/2, 
+                15,
+                { align: 'center' }
+            );
+        }
+    });
+    doc.save(`考核统计_${new Date().toLocaleDateString()}.pdf`);
+});
+
+// 为类别输入框设置datalist
+    for (let i = 1; i <= 5; i++) {
+        document.getElementById(`category-${i}`).setAttribute('list', 'categoryOptions');
+        document.getElementById(`college-${i}`).setAttribute('list', 'collegeOptions');
+    }
+    // 学院输入框自动匹配功能
+    const collegeInputs = document.querySelectorAll('input[placeholder="学院"]');
+    collegeInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            const value = this.value.toLowerCase();
+            const options = document.querySelectorAll('#collegeOptions option');
+            
+            // 重置所有选项显示
+            options.forEach(option => {
+                option.hidden = false;
+            });
+            
+            if (!value) return;
+            
+            // 过滤匹配项
+            options.forEach(option => {
+                const keys = option.dataset.keys.toLowerCase().split(' ');
+                const isMatch = keys.some(key => key.includes(value)) || 
+                               option.value.toLowerCase().includes(value);
+                option.hidden = !isMatch;
+            });
+        });
+    });
+    </script>
+</body>
+</html>
