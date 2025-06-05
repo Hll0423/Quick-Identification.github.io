@@ -1,4 +1,7 @@
 ﻿
+
+
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 
@@ -483,6 +486,29 @@ animation: formSlideIn 0.4s ease-out;
     }
 }
 
+/* 添加重新抽查按钮样式 */
+#recheck-button {
+    padding: 12px 28px;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background: #6c757d; /* 改为灰色，不太显眼 */
+    color: white;
+    box-shadow:  0 2px 4px rgba(0,0,0,0.1); /* 减少阴影效果 */
+    min-width: 150px;
+    margin-left: 10px;
+}
+#recheck-button:hover {
+    background:  #5a6268; /* 悬停时稍深的灰色 */
+    transform: translateY(-1px);
+}
+#recheck-button:active {
+    transform: translateY(0);
+}
+
+
         .answer-form input {
             width: 90%;
             padding: 8px;
@@ -895,6 +921,9 @@ letter-spacing: 0px;
         <input type="file" id="file-input" accept=".xlsx,.xls">
         <button id="action-button" disabled>开始抽查</button>
     </div>
+    <div class="button-group">
+        <button id="recheck-button" style="display:none; margin-left:338px;margin-top:-20px;"title="若有无效照片，请点击【重新抽查】按键">重新抽查</button>
+    </div>
 </div>
             
             <div class="score-time-section">
@@ -1171,6 +1200,8 @@ homeLink.addEventListener('click', function(e) {
         const statsTableBody = document.getElementById('statsTableBody');
         const statsTable = document.getElementById('statsTable');
         const statsClose = document.querySelector('.stats-close');
+        const recheckButton = document.getElementById('recheck-button');
+        let isFirstCheck = true; // 标记是否是第一次抽查
         
         let adminInfo = {
             name: '',
@@ -1244,24 +1275,27 @@ homeLink.addEventListener('click', function(e) {
         });
 
         actionButton.addEventListener('click', function() {
-            if (this.textContent === '开始抽查') {
-                // 显示登记模态框
-                registerModal.style.display = 'block';
-            } else if (this.textContent === '停止抽查') {
-                this.textContent = '计算分数';
-                this.classList.add('start');
-                this.classList.remove('stop');
-                clearInterval(intervalId);
-
-                // 显示答案输入框
-                answerForms.forEach(form => {
-                    form.style.display = 'block';
-                });
-
-                // 开始计时器
-                startTimer();
-
-            } else if (this.textContent === '计算分数') {
+    if (this.textContent === '开始抽查') {
+        registerModal.style.display = 'block';
+    } else if (this.textContent === '停止抽查') {
+        this.textContent = '计算分数';
+        this.classList.add('start');
+        this.classList.remove('stop');
+        clearInterval(intervalId);
+        
+        // 如果是第一次抽查，显示重新抽查按钮
+        if (isFirstCheck) {
+            recheckButton.style.display = 'block';
+        }
+        
+        // 显示答案输入框
+        answerForms.forEach(form => {
+            form.style.display = 'block';
+        });
+        
+        startTimer();
+    }else if (this.textContent === '计算分数') {
+                recheckButton.style.display = 'none';
                 this.textContent = '开始抽查';
                 this.classList.remove('start');
                 
@@ -1420,64 +1454,76 @@ homeLink.addEventListener('click', function(e) {
 
         // 登记表单提交
         registerForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const adminName = document.getElementById('adminName').value.trim();
-            const adminId = document.getElementById('adminId').value.trim();
-            
-            if (!adminName || !adminId) {
-                alert('请填写完整的姓名和工号！');
-                return;
-            }
-            
-            adminInfo.name = adminName;
-            adminInfo.id = adminId;
-            
-            // 关闭登记模态框
-            registerModal.style.display = 'none';
-            
-            // 开始抽查
-            actionButton.textContent = '停止抽查';
-            actionButton.classList.add('stop');
-            actionButton.classList.remove('start');
-            studentInfos.forEach(info => {
-                info.textContent = '';
-                info.classList.remove('active');
-            });
-            
-            // 隐藏答案输入框
-            answerForms.forEach(form => {
-                form.style.display = 'none';
-            });
-            
-            // 清除之前的输入和样式
-            for (let i = 1; i <= 5; i++) {
-                document.getElementById(`name-${i}`).value = '';
-                document.getElementById(`college-${i}`).value = '';
-                document.getElementById(`category-${i}`).value = '';
-                document.getElementById(`name-${i}`).className = '';
-                document.getElementById(`college-${i}`).className = '';
-                document.getElementById(`category-${i}`).className = '';
-            }
-            
-            // 隐藏分数显示
-            scoreDisplay.style.display = 'none';
-            
-            // 重置计时器
-            elapsedTime = 0;
-            timeDisplay.textContent = '用时: 00:00';
-            
-            intervalId = setInterval(() => {
-                const indices = new Set();
-                while(indices.size < 5) {
-                    indices.add(Math.floor(Math.random() * students.length));
-                }
-                currentIndices = [...indices];
-                studentPhotos.forEach((photo, i) => {
-                    photo.src = students[currentIndices[i]].photo;
-                });
-            }, 100);
+    e.preventDefault();
+    
+    const adminName = document.getElementById('adminName').value.trim();
+    const adminId = document.getElementById('adminId').value.trim();
+    
+    if (!adminName || !adminId) {
+        alert('请填写完整的姓名和工号！');
+        return;
+    }
+    
+    adminInfo.name = adminName;
+    adminInfo.id = adminId;
+    isFirstCheck = true; // 设置为第一次抽查
+    
+    registerModal.style.display = 'none';
+    startCheckingProcess();
+});
+// 新增开始抽查流程函数
+function startCheckingProcess() {
+    actionButton.textContent = '停止抽查';
+    actionButton.classList.add('stop');
+    actionButton.classList.remove('start');
+    recheckButton.style.display = 'none'; // 隐藏重新抽查按钮
+    
+    studentInfos.forEach(info => {
+        info.textContent = '';
+        info.classList.remove('active');
+    });
+    
+    answerForms.forEach(form => {
+        form.style.display = 'none';
+    });
+    
+    // 重置所有输入
+    for (let i = 1; i <= 5; i++) {
+        document.getElementById(`name-${i}`).value = '';
+        document.getElementById(`college-${i}`).value = '';
+        document.getElementById(`category-${i}`).value = '';
+        document.getElementById(`floor-${i}`).value = '';
+        document.getElementById(`room-${i}`).value = '';
+        document.getElementById(`name-${i}`).className = '';
+        document.getElementById(`college-${i}`).className = '';
+        document.getElementById(`category-${i}`).className = '';
+        document.getElementById(`floor-${i}`).className = '';
+        document.getElementById(`room-${i}`).className = '';
+    }
+    
+    scoreDisplay.style.display = 'none';
+    elapsedTime = 0;
+    timeDisplay.textContent = '用时: 00:00';
+    
+    // 开始抽查照片
+    startPhotoChecking();
+}
+// 新增开始照片抽查函数
+function startPhotoChecking() {
+    clearInterval(intervalId); // 清除之前的定时器
+    
+    intervalId = setInterval(() => {
+        const indices = new Set();
+        while(indices.size < 5) {
+            indices.add(Math.floor(Math.random() * students.length));
+        }
+        currentIndices = [...indices];
+        studentPhotos.forEach((photo, i) => {
+            photo.src = students[currentIndices[i]].photo;
         });
+    }, 200);
+}
+
 
         // 分数统计功能
         statsLink.addEventListener('click', function(e) {
@@ -1495,6 +1541,17 @@ homeLink.addEventListener('click', function(e) {
                 statsModal.style.display = 'none';
             }
         });
+
+
+// 添加重新抽查按钮事件
+recheckButton.addEventListener('click', function() {
+    const confirmRecheck = confirm('确定要重新抽查吗？出现无效照片需要重新抽查。');
+    if (confirmRecheck) {
+        isFirstCheck = false; // 标记不是第一次抽查
+        startCheckingProcess();
+    }
+});
+
 
         // 更新分数统计表格
         function updateStatsTable() {
