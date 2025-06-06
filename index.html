@@ -933,7 +933,7 @@ letter-spacing: 0px;
         <div class="student-display">
             <!-- 学生卡片结构保持不变 -->
             <div class="student-card">
-                <img class="student-photo" id="student-photo-1" src="images/img_logo/default_avatar.png" alt="学生照片">
+                <img class="student-photo" loading="lazy" id="student-photo-1" src="images/img_logo/default_avatar.png" alt="学生照片">
                 <div class="answer-form" id="answer-form-1" style="display: none;">
                     <input type="text" placeholder="姓名" id="name-1">
                     <div class="form-row">
@@ -947,7 +947,7 @@ letter-spacing: 0px;
                 <div class="student-info" id="student-info-1"></div>
             </div>
             <div class="student-card">
-                <img class="student-photo" id="student-photo-2" src="images/img_logo/default_avatar.png" alt="学生照片">
+                <img class="student-photo" loading="lazy" id="student-photo-2" src="images/img_logo/default_avatar.png" alt="学生照片">
                 <div class="answer-form" id="answer-form-2" style="display: none;">
                     <input type="text" placeholder="姓名" id="name-2">
                     <div class="form-row">
@@ -960,7 +960,7 @@ letter-spacing: 0px;
                 <div class="student-info" id="student-info-2"></div>
             </div>
             <div class="student-card">
-                <img class="student-photo" id="student-photo-3" src="images/img_logo/default_avatar.png" alt="学生照片">
+                <img class="student-photo" loading="lazy" id="student-photo-3" src="images/img_logo/default_avatar.png" alt="学生照片">
                 <div class="answer-form" id="answer-form-3" style="display: none;">
                     <input type="text" placeholder="姓名" id="name-3">
                     <div class="form-row">
@@ -973,7 +973,7 @@ letter-spacing: 0px;
                 <div class="student-info" id="student-info-3"></div>
             </div>
             <div class="student-card">
-                <img class="student-photo" id="student-photo-4" src="images/img_logo/default_avatar.png" alt="学生照片">
+                <img class="student-photo" loading="lazy" id="student-photo-4" src="images/img_logo/default_avatar.png" alt="学生照片">
                 <div class="answer-form" id="answer-form-4" style="display: none;">
                     <input type="text" placeholder="姓名" id="name-4">
                     <div class="form-row">
@@ -986,7 +986,7 @@ letter-spacing: 0px;
                 <div class="student-info" id="student-info-4"></div>
             </div>
             <div class="student-card">
-                <img class="student-photo" id="student-photo-5" src="images/img_logo/default_avatar.png" alt="学生照片">
+                <img class="student-photo" loading="lazy" id="student-photo-5" src="images/img_logo/default_avatar.png" alt="学生照片">
                 <div class="answer-form" id="answer-form-5" style="display: none;">
                     <input type="text" placeholder="姓名" id="name-5">
                     <div class="form-row">
@@ -1522,7 +1522,7 @@ function startPhotoChecking() {
         studentPhotos.forEach((photo, i) => {
             photo.src = students[currentIndices[i]].photo + "?t=" + Date.now();
         });
-    }, 200);
+    }, 100);
 }
 
 
