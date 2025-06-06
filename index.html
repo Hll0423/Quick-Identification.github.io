@@ -1,7 +1,4 @@
 ﻿
-
-
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 
@@ -1473,6 +1470,11 @@ homeLink.addEventListener('click', function(e) {
 });
 // 新增开始抽查流程函数
 function startCheckingProcess() {
+    // 重置计时器
+    stopTimer();
+    elapsedTime = 0;
+    timeDisplay.textContent = '用时: 00:00';
+
     actionButton.textContent = '停止抽查';
     actionButton.classList.add('stop');
     actionButton.classList.remove('start');
@@ -1521,7 +1523,7 @@ function startPhotoChecking() {
         studentPhotos.forEach((photo, i) => {
             photo.src = students[currentIndices[i]].photo;
         });
-    }, 200);
+    }, 100);
 }
 
 
@@ -1548,6 +1550,10 @@ recheckButton.addEventListener('click', function() {
     const confirmRecheck = confirm('确定要重新抽查吗？出现无效照片需要重新抽查。');
     if (confirmRecheck) {
         isFirstCheck = false; // 标记不是第一次抽查
+        // 重置计时器
+        stopTimer();
+        elapsedTime = 0;
+        timeDisplay.textContent = '用时: 00:00';
         startCheckingProcess();
     }
 });
