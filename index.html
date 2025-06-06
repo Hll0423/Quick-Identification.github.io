@@ -1,5 +1,4 @@
-﻿
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 
 <head>
@@ -1521,9 +1520,9 @@ function startPhotoChecking() {
         }
         currentIndices = [...indices];
         studentPhotos.forEach((photo, i) => {
-            photo.src = students[currentIndices[i]].photo;
+            photo.src = students[currentIndices[i]].photo + "?t=" + Date.now();
         });
-    }, 100);
+    }, 200);
 }
 
 
