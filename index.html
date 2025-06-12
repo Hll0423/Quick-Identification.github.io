@@ -1,11 +1,13 @@
-﻿
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>楼栋安全人脸抽查系统</title>
+    <!-- 添加Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
         :root {
             --primary-blue: #003a70;
@@ -905,7 +907,7 @@ letter-spacing: 0px;
                <li><a href="#" id="home-link">首页</a></li>
  <li><a href="docs/系统使用说明书.docx" download>使用说明</a></li>
                 <li><a href="#" id="stats-link">分数统计</a></li>
-<li><a href="html/datascreen.html" id="stats-link" target="_blank">数据大屏</a></li>
+<li><a href="html/数据大屏4.html" id="stats-link" target="_blank">数据大屏</a></li>
             </ul>
         </nav>
     </header>
@@ -1088,12 +1090,27 @@ letter-spacing: 0px;
     </footer>
 
 
-<!-- 在xlsx库引用之后添加 -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <!-- 在xlsx库引用之后添加 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
-// 在页面加载时添加初始化提示
+          // Firebase配置
+const firebaseConfig = {
+apiKey: "AIzaSyAvine2MOpN46weS1eCWr0SUORQIDzbC2Y",
+authDomain: "quickidentificationsystem.firebaseapp.com",
+databaseURL: "https://quickidentificationsystem-default-rtdb.asia-southeast1.firebasedatabase.app",
+projectId: "quickidentificationsystem",
+storageBucket: "quickidentificationsystem.firebasestorage.app",
+messagingSenderId: "858889343977",
+appId: "1:858889343977:web:ad1006a381631fd20e3178"
+};
+    
+// 初始化Firebase
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+
+        // 在页面加载时添加初始化提示
         window.addEventListener('load', function() {
             if (allTestResults.length > 0) {
                 const shouldClear = confirm('检测到历史考核数据，是否清除后开始新一轮的考核？');
@@ -1421,6 +1438,9 @@ homeLink.addEventListener('click', function(e) {
                 
                 allTestResults.push(testResult);
                 localStorage.setItem('allTestResults', JSON.stringify(allTestResults));
+
+// 保存到Firebase
+saveToFirebase(testResult);
                 
                 // 重置计时器
                 elapsedTime = 0;
@@ -1763,6 +1783,40 @@ document.getElementById('exportPDF').addEventListener('click', () => {
             });
         });
     });
+
+// 保存数据到Firebase
+       function saveToFirebase(testResult) {
+            const testResultsRef = database.ref('testResults');
+            testResultsRef.push(testResult)
+                .then(() => console.log('数据保存到Firebase成功'))
+                .catch(error => console.error('保存数据到Firebase失败:', error));
+        }
+        
+        // 从Firebase加载数据
+        function loadFromFirebase() {
+            const testResultsRef = database.ref('testResults');
+            testResultsRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    allTestResults = Object.values(data);
+                    localStorage.setItem('allTestResults', JSON.stringify(allTestResults));
+                    updateStatsTable();
+                }
+            });
+        }
+        
+        // 在页面加载时加载Firebase数据
+        window.addEventListener('load', function() {
+            loadFromFirebase();
+            
+            // 原有加载逻辑保持不变
+            if (allTestResults.length > 0) {
+                const shouldClear = confirm('检测到历史考核数据，是否清除后开始新一轮的考核？');
+                if (shouldClear) {
+                    clearAllData();
+                }
+            }
+        });
     </script>
 </body>
 </html>
