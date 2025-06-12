@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>智慧公寓快速识人数据大屏</title>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.2/dist/echarts.min.js"></script>
+    <!-- 添加Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
         :root {
             --bg-primary: #0A1A2F;
@@ -373,6 +376,21 @@
     </div>
 
     <script>
+        // Firebase配置（与主文件相同）
+        const firebaseConfig = {
+            apiKey: "AIzaSyAvine2MOpN46weS1eCWr0SUORQIDzbC2Y",
+            authDomain: "quickidentificationsystem.firebaseapp.com",
+            databaseURL: "https://quickidentificationsystem-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "quickidentificationsystem",
+            storageBucket: "quickidentificationsystem.firebasestorage.app",
+            messagingSenderId: "858889343977",
+            appId: "1:858889343977:web:ad1006a381631fd20e3178"
+        };
+        
+        // 初始化Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
         // 图表实例
         let scoreChart, categoryPieChart;
         
@@ -389,11 +407,28 @@
             {name:'肖慧', building:'B17', students:743}
         ];
 
-        // 获取排名数据
-        const getRankingData = () => {
-            const data = JSON.parse(localStorage.getItem('allTestResults')) || [];
-            return data.sort((a, b) => b.score - a.score).slice(0, 5);
+        // 从Firebase加载数据
+        let allData = [];
+        
+        function loadFromFirebase() {
+            const testResultsRef = database.ref('testResults');
+            testResultsRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    allData = Object.values(data);
+                    renderRanking();
+                    updateCharts();
+                }
+            });
         }
+        
+        // 修改后的获取排名数据函数
+        const getRankingData = () => {
+            return [...allData]
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 5);
+        }
+
 
         // 渲染排名列表
         const renderRanking = () => {
@@ -490,7 +525,8 @@
 
         // 处理图表数据
         const processChartData = () => {
-            const data = JSON.parse(localStorage.getItem('allTestResults')) || [];
+            // 使用从Firebase加载的数据
+            const data = allData;
             
             const scoreRanges = [
                 { label: '0-59', min: 0, max: 59 },
@@ -654,7 +690,7 @@
         }
         // 初始化
         window.addEventListener('load', () => {
-            renderRanking();
+            loadFromFirebase();
             updateTimestamp();
             initCharts();
             window.addEventListener('resize', handleResize);
