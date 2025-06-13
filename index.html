@@ -1896,6 +1896,9 @@ document.getElementById('exportPDF').addEventListener('click', () => {
                if (statsModal.style.display === 'block') {
                    updateStatsTable();
                }
+               
+               // 通知数据大屏页面刷新数据
+               localStorage.setItem('firebaseDataUpdated', Date.now().toString());
            });
        }
     </script>
