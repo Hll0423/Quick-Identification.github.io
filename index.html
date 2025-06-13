@@ -1112,6 +1112,9 @@ const database = firebase.database();
 
         // 在页面加载时添加初始化提示
         window.addEventListener('load', function() {
+           // 设置全局Firebase监听
+           setupFirebaseListener();
+
             if (allTestResults.length > 0) {
                 const shouldClear = confirm('检测到历史考核数据，是否清除后开始新一轮的考核？');
                 if (shouldClear) {
@@ -1192,6 +1195,9 @@ homeLink.addEventListener('click', function(e) {
                     .then(() => {
                         console.log('Firebase数据已清除');
                         alert('所有考核数据已清除！');
+
+                       // 强制更新分数统计表格
+                       updateStatsTable();
                     })
                     .catch(error => {
                         console.error('清除Firebase数据失败:', error);
@@ -1594,36 +1600,15 @@ function startPhotoChecking() {
             e.preventDefault();
             updateStatsTable();
             statsModal.style.display = 'block';
-            
-            // 添加Firebase实时监听
-            testResultsRef = database.ref('testResults');
-            testResultsRef.on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    allTestResults = Object.values(data);
-                    localStorage.setItem('allTestResults', JSON.stringify(allTestResults));
-                    updateStatsTable();
-                }
-            });
         });
 
         statsClose.addEventListener('click', function() {
             statsModal.style.display = 'none';
-            
-            // 移除Firebase监听
-            if (testResultsRef) {
-                testResultsRef.off();
-            }
         });
 
         window.addEventListener('click', function(e) {
             if (e.target === statsModal) {
                 statsModal.style.display = 'none';
-                
-                // 移除Firebase监听
-                if (testResultsRef) {
-                    testResultsRef.off();
-                }
             }
         });
 
@@ -1890,6 +1875,29 @@ document.getElementById('exportPDF').addEventListener('click', () => {
                 if (shouldClear) clearAllData();  
             }
         });
+
+       // 设置全局Firebase监听
+       function setupFirebaseListener() {
+           const testResultsRef = database.ref('testResults');
+           testResultsRef.on('value', (snapshot) => {
+               const data = snapshot.val();
+               if (data) {
+                   allTestResults = Object.values(data);
+                   localStorage.setItem('allTestResults', JSON.stringify(allTestResults));
+                   console.log('Firebase数据已同步到本地');
+               } else {
+                   // 如果Firebase没有数据，清空本地数据
+                   allTestResults = [];
+                   localStorage.removeItem('allTestResults');
+                   console.log('Firebase数据已清空，同步到本地');
+               }
+               
+               // 如果分数统计页面是打开的，更新表格
+               if (statsModal.style.display === 'block') {
+                   updateStatsTable();
+               }
+           });
+       }
     </script>
 </body>
 </html>
