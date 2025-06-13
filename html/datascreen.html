@@ -391,6 +391,13 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
+
+           // 设置存储监听
+           setupStorageListener();
+           
+           // 初始加载数据
+           loadDataAndRefresh();
+
         // 图表实例
         let scoreChart, categoryPieChart;
         
@@ -744,6 +751,32 @@
             }
         `;
         document.head.appendChild(style);
+
+       // 监听Firebase数据更新事件
+       function setupStorageListener() {
+           window.addEventListener('storage', function(event) {
+               if (event.key === 'firebaseDataUpdated') {
+                   // 当接收到更新通知时，刷新数据
+                   loadDataAndRefresh();
+               }
+           });
+       }
+       
+       // 从Firebase加载数据并刷新大屏
+       function loadDataAndRefresh() {
+           const testResultsRef = database.ref('testResults');
+           testResultsRef.once('value').then((snapshot) => {
+               const data = snapshot.val();
+               if (data) {
+                   const allTestResults = Object.values(data);
+                   // 使用最新数据刷新大屏
+                   refreshDataScreen(allTestResults);
+               } else {
+                   // 没有数据时传入空数组
+                   refreshDataScreen([]);
+               }
+           });
+       }
     </script>
 </body>
 </html>
