@@ -391,13 +391,6 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-
-           // 设置存储监听
-           setupStorageListener();
-           
-           // 初始加载数据
-           loadDataAndRefresh();
-
         // 图表实例
         let scoreChart, categoryPieChart;
         
@@ -418,16 +411,14 @@
         let allData = [];
         
         function loadFromFirebase() {
-            const testResultsRef = database.ref('testResults');
-            testResultsRef.on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    allData = Object.values(data);
-                    renderRanking();
-                    updateCharts();
-                }
-            });
-        }
+    const testResultsRef = database.ref('testResults');
+    testResultsRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        allData = data ? Object.values(data) : [];   // +++ 处理空数据 +++
+        renderRanking();
+        updateCharts();
+    });
+}
         
         // 修改后的获取排名数据函数
         const getRankingData = () => {
@@ -441,6 +432,16 @@
         const renderRanking = () => {
             const container = document.getElementById('rankingList');
             const data = getRankingData();
+
+            // +++ 添加空数据提示 +++
+    if (data.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center; padding:40px; color:rgba(255,255,255,0.4)">
+                暂无考核数据
+            </div>
+        `;
+        return;
+    }
             
             while(data.length < 5) data.push({ placeholder: true });
             container.innerHTML = data.map((item, index) => `
@@ -468,41 +469,55 @@
 
         // 显示详细信息
         function showAdminDetails(name) {
-    const results = JSON.parse(localStorage.getItem('allTestResults')) || [];
-    const admin = results.find(r => r.name === name);
+    // +++ 优先使用实时数据 +++
+    const admin = allData.find(r => r.name === name);
     const building = buildingData.find(b => b.name === name);
+    
     // 处理得分为0的显示逻辑
     const formatScore = (value) => {
         return typeof value === 'number' ? value : '--';
     };
-    const content = `
-        <div class="detail-item">
-            <span class="detail-label">管理员姓名</span>
-            <span class="detail-value">${name || '--'}</span>
-        </div>
-        <div class="detail-item">
-            <span class="detail-label">姓名:</span>
-            <span class="detail-value">${formatScore(admin?.nameScore)}</span>
-            <span class="detail-label">学院:</span>
-            <span class="detail-value">${formatScore(admin?.collegeScore)}</span>
-            <span class="detail-label">类别:</span>
-            <span class="detail-value">${formatScore(admin?.categoryScore)}</span>
-            <span class="detail-label">楼层:</span>
-            <span class="detail-value">${formatScore(admin?.floorScore)}</span>
-            <span class="detail-label">房间号:</span>
-            <span class="detail-value">${formatScore(admin?.roomScore)}</span>
-        </div>
-        
-        <div class="detail-item">
-            <span class="detail-label">负责楼栋</span>
-            <span class="detail-value">${building?.building || '--'}</span>
-        </div>
-        <div class="detail-item">
-            <span class="detail-label">在住人数</span>
-            <span class="detail-value">${building?.students ?? '--'}</span>
-        </div>
-    `;
-    document.getElementById('detailContent').innerHTML = content;
+    
+    // +++ 添加空值检查 +++
+    if (!admin) {
+        document.getElementById('detailContent').innerHTML = `
+            <div class="detail-item">
+                <span class="detail-label">管理员姓名</span>
+                <span class="detail-value">${name || '--'}</span>
+            </div>
+            <div class="detail-item">
+                <span>暂无详细数据</span>
+            </div>
+        `;
+    } else {
+        const content = `
+            <div class="detail-item">
+                <span class="detail-label">管理员姓名</span>
+                <span class="detail-value">${name || '--'}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">姓名:</span>
+                <span class="detail-value">${formatScore(admin?.nameScore)}</span>
+                <span class="detail-label">学院:</span>
+                <span class="detail-value">${formatScore(admin?.collegeScore)}</span>
+                <span class="detail-label">类别:</span>
+                <span class="detail-value">${formatScore(admin?.categoryScore)}</span>
+                <span class="detail-label">楼层:</span>
+                <span class="detail-value">${formatScore(admin?.floorScore)}</span>
+                <span class="detail-label">房间号:</span>
+                <span class="detail-value">${formatScore(admin?.roomScore)}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">负责楼栋</span>
+                <span class="detail-value">${building?.building || '--'}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">在住人数</span>
+                <span class="detail-value">${building?.students ?? '--'}</span>
+            </div>
+        `;
+        document.getElementById('detailContent').innerHTML = content;
+    }
     document.getElementById('detailModal').style.display = 'block';
 }
 
@@ -751,32 +766,6 @@
             }
         `;
         document.head.appendChild(style);
-
-       // 监听Firebase数据更新事件
-       function setupStorageListener() {
-           window.addEventListener('storage', function(event) {
-               if (event.key === 'firebaseDataUpdated') {
-                   // 当接收到更新通知时，刷新数据
-                   loadDataAndRefresh();
-               }
-           });
-       }
-       
-       // 从Firebase加载数据并刷新大屏
-       function loadDataAndRefresh() {
-           const testResultsRef = database.ref('testResults');
-           testResultsRef.once('value').then((snapshot) => {
-               const data = snapshot.val();
-               if (data) {
-                   const allTestResults = Object.values(data);
-                   // 使用最新数据刷新大屏
-                   refreshDataScreen(allTestResults);
-               } else {
-                   // 没有数据时传入空数组
-                   refreshDataScreen([]);
-               }
-           });
-       }
     </script>
 </body>
 </html>
