@@ -1183,31 +1183,26 @@ homeLink.addEventListener('click', function(e) {
         
         // 清除所有数据
         function clearAllData() {
-            const shouldClear = confirm('确定要清除所有考核数据吗？此操作不可恢复！');
-            if (shouldClear) {
-                // 清除本地存储
-                localStorage.removeItem('allTestResults');
-                allTestResults = [];
-                
-                // 清除Firebase数据
-                const testResultsRef = database.ref('testResults');
-                testResultsRef.remove()
-                    .then(() => {
-                        console.log('Firebase数据已清除');
-                        alert('所有考核数据已清除！');
+    localStorage.removeItem('allTestResults');
+    allTestResults = [];
+    updateStatsTable();
+    alert('历史数据已成功清除！');
 
-                       // 强制更新分数统计表格
-                       updateStatsTable();
-                    })
-                    .catch(error => {
-                        console.error('清除Firebase数据失败:', error);
-                        alert('清除Firebase数据失败，请检查控制台错误信息。');
-                    });
-                
-                // 更新分数统计表格
-                updateStatsTable();
-            }
-        }
+    // 清除Firebase数据
+    const testResultsRef = database.ref('testResults');
+    testResultsRef.remove()
+        .then(() => {
+            console.log('Firebase数据已清除');
+            alert('所有考核数据已清除！');
+        })
+        .catch(error => {
+            console.error('清除Firebase数据失败:', error);
+            alert('清除Firebase数据失败，请检查控制台错误信息。');
+        });
+    
+    // +++ 新增：清除本地存储 +++
+    localStorage.removeItem('allTestResults');
+}
 
         function clearAllData() {
             localStorage.removeItem('allTestResults');
@@ -1896,9 +1891,6 @@ document.getElementById('exportPDF').addEventListener('click', () => {
                if (statsModal.style.display === 'block') {
                    updateStatsTable();
                }
-               
-               // 通知数据大屏页面刷新数据
-               localStorage.setItem('firebaseDataUpdated', Date.now().toString());
            });
        }
     </script>
