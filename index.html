@@ -1193,7 +1193,6 @@ homeLink.addEventListener('click', function(e) {
     testResultsRef.remove()
         .then(() => {
             console.log('Firebase数据已清除');
-            alert('所有考核数据已清除！');
         })
         .catch(error => {
             console.error('清除Firebase数据失败:', error);
