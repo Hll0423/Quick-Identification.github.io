@@ -1579,8 +1579,8 @@ function startPhotoChecking() {
                     photo.src = students[currentIndices[i]].photo + "?t=" + Date.now();
                     photo.style.opacity = 1;
                 });
-            }, 100); // 300毫秒后显示新照片
-        }, 500); // 改为2秒刷新一次
+            }, 100); // 100毫秒后显示新照片
+        }, 1000); // 改为1秒刷新一次
     }
 
 
