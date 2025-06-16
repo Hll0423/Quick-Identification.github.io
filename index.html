@@ -408,8 +408,8 @@ justify-content: center;
             object-fit: cover;
             border-radius: 8px;
             margin-bottom: 0.5rem; /* Reduced margin */
-            transition: opacity 0.3s ease;
-border-bottom: 6px solid var(--accent-blue);
+            transition: opacity 0.5s ease;
+            border-bottom: 6px solid var(--accent-blue);
         }
 
         .student-info {
@@ -1183,42 +1183,24 @@ homeLink.addEventListener('click', function(e) {
         
         // 清除所有数据
         function clearAllData() {
-    localStorage.removeItem('allTestResults');
-    allTestResults = [];
-    updateStatsTable();
-    alert('历史数据已成功清除！');
-
-    // 清除Firebase数据
-    const testResultsRef = database.ref('testResults');
-    testResultsRef.remove()
-        .then(() => {
-            console.log('Firebase数据已清除');
-        })
-        .catch(error => {
-            console.error('清除Firebase数据失败:', error);
-            alert('清除Firebase数据失败，请检查控制台错误信息。');
-        });
-    
-    // +++ 新增：清除本地存储 +++
-    localStorage.removeItem('allTestResults');
-}
-
-        function clearAllData() {
             localStorage.removeItem('allTestResults');
             allTestResults = [];
             updateStatsTable();
             alert('历史数据已成功清除！');
 
-                // 清除Firebase数据
-                const testResultsRef = database.ref('testResults');
-                testResultsRef.remove()
-                    .then(() => {
-                        console.log('Firebase数据已清除');
-                    })
-                    .catch(error => {
-                        console.error('清除Firebase数据失败:', error);
-                        alert('清除Firebase数据失败，请检查控制台错误信息。');
-                    });
+            // 清除Firebase数据
+            const testResultsRef = database.ref('testResults');
+            testResultsRef.remove()
+           .then(() => {
+            console.log('Firebase数据已清除');
+            })
+            .catch(error => {
+            console.error('清除Firebase数据失败:', error);
+            alert('清除Firebase数据失败，请检查控制台错误信息。');
+        });
+    
+            // +++ 新增：清除本地存储 +++
+            localStorage.removeItem('allTestResults');
         }
 
         clearDataBtn.addEventListener('click', function() {
@@ -1574,6 +1556,11 @@ function startCheckingProcess() {
 // 新增开始照片抽查函数
 function startPhotoChecking() {
     clearInterval(intervalId); // 清除之前的定时器
+
+        // 添加过渡效果
+        studentPhotos.forEach(photo => {
+            photo.style.transition = "opacity 0.3s ease";
+        });
     
     intervalId = setInterval(() => {
         const indices = new Set();
@@ -1581,11 +1568,20 @@ function startPhotoChecking() {
             indices.add(Math.floor(Math.random() * students.length));
         }
         currentIndices = [...indices];
-        studentPhotos.forEach((photo, i) => {
-            photo.src = students[currentIndices[i]].photo + "?t=" + Date.now();
-        });
-    }, 100);
-}
+        // 先淡出照片
+            studentPhotos.forEach(photo => {
+                photo.style.opacity = 0;
+            });
+            
+            // 淡入新照片
+            setTimeout(() => {
+                studentPhotos.forEach((photo, i) => {
+                    photo.src = students[currentIndices[i]].photo + "?t=" + Date.now();
+                    photo.style.opacity = 1;
+                });
+            }, 300); // 300毫秒后显示新照片
+        }, 500); // 改为2秒刷新一次
+    }
 
 
         // 分数统计功能
