@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿
+<!DOCTYPE html>
 <html lang="zh-CN">
 
 <head>
@@ -1579,8 +1580,8 @@ function startPhotoChecking() {
                     photo.src = students[currentIndices[i]].photo + "?t=" + Date.now();
                     photo.style.opacity = 1;
                 });
-            }, 50); // 100毫秒后显示新照片
-        }, 400); // 改为1秒刷新一次
+            }, 100); // 50毫秒后显示新照片
+        }, 400); // 改为0.4秒刷新一次
     }
 
 
