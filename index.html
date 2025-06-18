@@ -1,5 +1,4 @@
-﻿
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 
 <head>
@@ -1176,12 +1175,21 @@ function resetToInitialState() {
     // 重置管理员信息
     adminInfo.name = '';
     adminInfo.id = '';
+
+    // +++ 新增：隐藏重新抽查按钮 +++
+    recheckButton.style.display = 'none';
+    
+    // +++ 重置抽查状态 +++
+    isFirstCheck = true;
 }
-homeLink.addEventListener('click', function(e) {
-    e.preventDefault();
-    resetToInitialState();
-});
+
+
+        homeLink.addEventListener('click', function(e) {
+             e.preventDefault();
+             resetToInitialState();
+        });
         
+
         // 清除所有数据
         function clearAllData() {
             localStorage.removeItem('allTestResults');
